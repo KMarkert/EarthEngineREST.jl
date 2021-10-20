@@ -1,5 +1,15 @@
+Integer# script to add EarthEngine REST API types
+# attempt to replicated API types in Julia structs
+
+"""
+`EESession` type used for authenticating request to the API
+
+$(TYPEDFIELDS)
+"""
 struct EESession
+    "GCP project name used for REST API requests"
     project::AbstractString
+    "authenticated Python requests session for making requests"
     auth::PyObject
 
     EESession(project::AbstractString, auth::PyObject) = new(project, auth)
@@ -34,19 +44,40 @@ struct EESession
     end
 end
 
-struct GridDimensions
-    width::Int
-    height::Int
 
-    GridDimensions(width::Int, height::Int) = new(width, height)
+"""
+Type used for defining the number of rows and columns for image requests
+See https://developers.google.com/earth-engine/reference/rest/v1beta/PixelGrid#GridDimensions
+
+$(TYPEDFIELDS)
+"""
+struct GridDimensions
+    "width of the grid, in pixels"
+    width::Integer
+    "height of the grid, in pixels"
+    height::Integer
+
+    GridDimensions(width::Integer, height::Integer) = new(width, height)
 end
 
+"""
+Type for defining the affine transform of image requests. The six values form a 2x3 matrix:
+
+See https://developers.google.com/earth-engine/reference/rest/v1beta/PixelGrid#affinetransform
+
+"""
 struct AffineTransform
+    "horizontal scale factor. w-e pixel resolution / pixel width"
     scaleX::Real
+    "horizontal shear factor. row rotation typically set to 0 for north-up images"
     shearX::Real
+    "horizontal offset. x-coordinate of the upper-left corner of the upper-left pixel "
     translateX::Real
+    "vertical shear factor. column rotation typically set to 0 for north-up images"
     shearY::Real
+    "vertical scale factor. n-s pixel resolution / pixel height (negative for north-up images)"
     scaleY::Real
+    "vertical offset. y-coordinate of the upper-left corner of the upper-left pixel "
     translateY::Real
 
     AffineTransform(
@@ -60,9 +91,18 @@ struct AffineTransform
 
 end
 
+"""
+Type used for defining a pixel grid on the surface of the Earth, via a map projection
+See https://developers.google.com/earth-engine/reference/rest/v1beta/PixelGrid
+
+$(TYPEDFIELDS)
+"""
 struct PixelGrid
+    "dimensions of the pixel grid"
     dimensions::GridDimensions
+    "affine transform of pixel grid"
     affineTransform::AffineTransform
+    "standard coordinate reference system code (e.g. 'EPSG:4326')"
     crsCode::AbstractString
 
     PixelGrid(
@@ -70,57 +110,63 @@ struct PixelGrid
         affinetransform::AffineTransform,
         crsCode::AbstractString,
     ) = new(dimensions, affinetransform, crsCode)
+end
 
-    function PixelGrid(bbox::AbstractVector, resolution::Real, crsCode::String)
-        minx, miny, maxx, maxy = bbox
-        y_coords = collect(range(miny + resolution, maxy, step = resolution))
-        x_coords = collect(range(minx, maxx - resolution, step = resolution))
-        xdim = length(x_coords)
-        ydim = length(y_coords)
+"""
+    PixelGrid(bbox::AbstractVector, resolution::Real, crsCode::String)
 
-        dimensions = GridDimensions(xdim, ydim)
+PixelGrid constructor based on bounding box, resolution, and crs code
+"""
+function PixelGrid(bbox::AbstractVector, resolution::Real, crsCode::String)
+    minx, miny, maxx, maxy = bbox
+    y_coords = collect(range(miny + resolution, maxy, step = resolution))
+    x_coords = collect(range(minx, maxx - resolution, step = resolution))
+    xdim = length(x_coords)
+    ydim = length(y_coords)
 
-        affinetransform =
-            AffineTransform(resolution, 0, minx, 0, -resolution, maxy)
+    dimensions = GridDimensions(xdim, ydim)
 
-        new(dimensions, affinetransform, crsCode)
-    end
+    affinetransform =
+        AffineTransform(resolution, 0, minx, 0, -resolution, maxy)
 
-    function PixelGrid(
-        bbox::AbstractVector{Real},
-        shape::AbstractVector{Int},
-        crsCode::AbstractString,
-    )
-        minx, miny, maxx, maxy = bbox
-        xdim, ydim = shape
-        xres = (maxx - minx) / xdim
-        yres = (maxy - miny) / ydim
+    PixelGrid(dimensions, affinetransform, crsCode)
+end
 
-        griddims = GridDimension(xdim, ydim)
+"""
+    PixelGrid(bbox::AbstractVector, shape::AbstractVector{Integer}, crsCode::String)
 
-        transform = AffineTransform(xres, 0, minx, 0, -yres, maxy)
+PixelGrid constructor based on bounding box, image dimensions, and crs code
+"""
+function PixelGrid(
+    bbox::AbstractVector{Real},
+    shape::AbstractVector{Integer},
+    crsCode::AbstractString,
+)
+    minx, miny, maxx, maxy = bbox
+    xdim, ydim = shape
+    xres = (maxx - minx) / xdim
+    yres = (maxy - miny) / ydim
 
-        new(griddims, transform, crsCode)
-    end
+    griddims = GridDimension(xdim, ydim)
 
-    function PixelGrid(
-        start::AbstractVector{Real},
-        stop::AbstractVector{Real},
-        resolution::Real,
-        crsCode::AbstractString,
-    )
+    transform = AffineTransform(xres, 0, minx, 0, -yres, maxy)
 
-    end
+    PixelGrid(griddims, transform, crsCode)
+end
 
-    function PixelGrid(session::EESession,geom::EE.AbstractEEObject,resolution::Real,crsCode::String)
-        coords = computevalue(session,coordinates(bounds(geom)))
-        minx = min(coords[1,:,1]...)
-        maxx = max(coords[1,:,1]...)
-        miny = min(coords[1,:,2]...)
-        maxy = max(coords[1,:,2]...)
+"""
+    PixelGrid(session::EESession,geom::EE.AbstractEEObject,resolution::Real,crsCode::String)
 
-        PixelGrid([minx,miny,maxx,maxy], resolution, crsCode)
-    end
+PixelGrid constructor based on an EarthEngine feature collection bounds, needs resolution and crs defined
+"""
+function PixelGrid(session::EESession,geom::EE.AbstractEEObject,resolution::Real,crsCode::String)
+    coords = computevalue(session,coordinates(bounds(geom)))
+    minx = min(coords[1,:,1]...)
+    maxx = max(coords[1,:,1]...)
+    miny = min(coords[1,:,2]...)
+    maxy = max(coords[1,:,2]...)
+
+    PixelGrid([minx,miny,maxx,maxy], resolution, crsCode)
 end
 
 struct CloudStorageDestination
@@ -203,23 +249,23 @@ struct ZoomSubset
 end
 
 struct TileOptions
-    startZoom::Int
+    startZoom::Integer
     skipEmpty::Bool
     mapsApiKey::String
     dimensions::GridDimensions
-    stride::Int
+    stride::Integer
     zoomSubset::ZoomSubset
-    endZoom::Int
+    endZoom::Integer
     scale::Real
 
     TileOptions(
-        startZoom::Int,
+        startZoom::Integer,
         skipEmpty::Bool,
         mapsApiKey::String,
         dimensions::GridDimensions,
-        stride::Int,
+        stride::Integer,
         zoomSubset::ZoomSubset,
-        endZoom::Int,
+        endZoom::Integer,
         scale::Real,
     ) = new(
         startZoom,

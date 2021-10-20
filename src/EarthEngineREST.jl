@@ -9,6 +9,7 @@ using PyCall
 using GeoArrays
 using EarthEngine
 using GeoDataFrames
+using DocStringExtensions
 import EarthEngine: Initialize
 import GeoArrays: geotransform_to_affine
 
@@ -32,15 +33,22 @@ include("eevalues.jl")
 include("eeimages.jl")
 include("eetables.jl")
 
+
+"""
+    _sendrequest(session::EESession, endpoint::AbstractString, data::Dict{Symbol,<:Any}; version::AbstractString = "latest", nretries::Integer = 4)
+
+Private function for sending requests to EarthEngine REST API. Uses exponential backoff to retry requests if failed with non-fatal error.
+"""
 function _sendrequest(
     session::EESession,
     endpoint::AbstractString,
     data::Dict{Symbol,<:Any};
     version::AbstractString = "latest",
+    nretries::Integer = 4
 )
     url = joinpath(apis[version], "projects", session.project, endpoint)
 
-    @repeat 4 try
+    @repeat nretries try
         response = session.auth.post(url = url, data = JSON3.write(data))
 
     catch e
@@ -52,7 +60,8 @@ end
 """
     typetodict(x::T)
 
-
+Function to convert EarthEngineREST types to dictionary key,value pairs to encode
+for API requests
 """
 function typetodict(x::T)::Dict{Symbol,Any} where {T}
     fields = fieldnames(T)
@@ -78,12 +87,12 @@ function typetodict(x::T)::Dict{Symbol,Any} where {T}
 end
 
 """
-    extract_geotransform(x::PixelGrid)
+    extract_geotransform(x::AffineTransform)
 
-
+Function to extract geotransform vector from AffineTransformation type
 """
-function extract_geotransform(x::PixelGrid)
-    af = typetodict(x.affineTransform)
+function extract_geotransform(x::AffineTransform)
+    af = typetodict(x)
     gt = [
         af[:translateX],
         af[:scaleX],
@@ -95,11 +104,20 @@ function extract_geotransform(x::PixelGrid)
 end
 
 """
-    extract_bbox(x::PixelGrid)
+    extract_geotransform(x::PixelGrid)
 
+Function to extract geotransform vector from PixelGrid type
+"""
+function extract_geotransform(x::PixelGrid)
+    extract_geotransform(x.affineTransform)
+end
 
 """
-function extract_bbox(x::PixelGrid)
+    extract_bbox(x::AffineTransform)
+
+Function to extract bounding box vector from AffineTransform type. Vector will be [W, S, E, N]
+"""
+function extract_bbox(x::AffineTransform)
     geo_t = extract_geotransform(x)
 
     xmin = min(geo_t[1], geo_t[1] + x_size * geo_t[2])
@@ -111,19 +129,43 @@ function extract_bbox(x::PixelGrid)
 end
 
 """
-    extract_affinemap(x::PixelGrid)
+    extract_bbox(x::PixelGrid)
 
+Function to extract bounding box vector from PixelGrid type. Vector will be [W, S, E, N]
+"""
+function extract_bbox(x::PixelGrid)
+    extract_bbox(x.affineTransform)
+end
 
 """
-function extract_affinemap(x::PixelGrid)
+    extract_affinemap(x::AffineTransform)
+
+Function to extract AffineMap type from AffineTransform type.
+"""
+function extract_affinemap(x::AffineTransform)
     gt = extract_geotransform(x)
     return geotransform_to_affine(gt)
 end
 
+"""
+    extract_affinemap(x::PixelGrid)
+
+Function to extract AffineMap type from PixelGrid type.
+"""
+function extract_affinemap(x::PixelGrid)
+    extract_affinemap(x.affineTransform)
+end
+
+"""
+    Initialize(session::EESession)
+
+Extends the `Initialize()` function to take an authenticated Earth Engine session
+and use those credentials.
+"""
 function Initialize(session::EESession)
     EarthEngine.Initialize(session.auth.credentials)
 end
 
-export Initialize, EESession, PixelGrid, GridDimensions, AffineTransform
+export Initialize, EESession, PixelGrid, GridDimensions, AffineTransform, computepixels, computetable, computevalue
 
 end # module

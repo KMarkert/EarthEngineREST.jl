@@ -1,10 +1,20 @@
 # script for sending and decoding requests for image computations
 
-function parseheader(hdr::AbstractString)
+"""
+    parse_npy_header(hdr::AbstractString)
+
+Function to parse npy header information to extract dimensions and array dtypes.
+Customized implementation of `NPY.parseheader` to handle numpy structured arrays which EE always returns.
+See https://numpy.org/devdocs/reference/generated/numpy.lib.format.html#format-version-1-0 for spec.
+"""
+function parse_npy_header(hdr::AbstractString)
+    # rework of the NPY.parseheader function to allow for structured arrays
+    # https://numpy.org/doc/stable/user/basics.rec.html#structured-datatypes
     s = NPZ.parsechar(hdr, '{')
 
     dict = Dict{String,Any}()
-    T = Any
+    # loop through and get the three key info
+    # description, fortran_order, and shape
     for _ = 1:3
         s = strip(s)
         key, s = NPZ.parsestring(s)
@@ -13,6 +23,7 @@ function parseheader(hdr::AbstractString)
         s = strip(s)
         if key == "descr"
             x, s = split(s, ", 'for")
+            # clean up the string info to be able to easily parse
             y = split(
                 replace(
                     replace(
@@ -29,6 +40,8 @@ function parseheader(hdr::AbstractString)
 
             bnames = []
             dtypes = []
+
+            # loop through the band info to get datatypes
             for z in y
                 if occursin("<", z)
                     push!(dtypes, replace(strip(z), "<" => ""))
@@ -60,11 +73,15 @@ function parseheader(hdr::AbstractString)
     return dict
 end
 
+"""
+    decode_npy_response(response::PyObject)
 
-function decoderesponse(response::PyObject)
+Function to take a response object of a npy bytes and convert to Julia array
+"""
+function decode_npy_response(response::PyObject)
     foo = response.content
 
-    hdr = parseheader(strip(split(foo, "\n")[1])[11:end])
+    hdr = parse_npy_header(strip(split(foo, "\n")[1])[11:end])
 
     banddtypes = map(x -> NPZ.Numpy2Julia[x], values(hdr["descr"]))
 
@@ -78,8 +95,10 @@ function decoderesponse(response::PyObject)
 
     dtype = banddtypes[1]
 
+    # create an empty in-memory buffer to temporarily write data to
     buffer = IOBuffer()
     write(buffer, foo)
+    # convert data to correct dtype
     bar = reinterpret(dtype, take!(buffer))
     close(buffer) # close the io buffer for clean memory management
 
@@ -97,35 +116,50 @@ function decoderesponse(response::PyObject)
     if channels > 1
         # reshape array from 1-d to correct 3-d dimensions
         arr3d::Array{dtype,3} = reshape(arr, (channels, width, height))
-        # reorder the dimensions for row-major to column-major
+        # reorder the dimensions so it is W,H,C
         img = permutedims(arr3d, (2, 3, 1))
     else
         arr2d::Array{dtype,2} = reshape(arr, (width, height))
         img = arr2d #rotl90(arr2d)
     end
 
-    # cast the result as a float32 array
-    # img = convert(Array{Float32}, img)
     return img
 end
 
+"""
+    computepixels(session::EESession, pixelgrid::PixelGrid, image::EE.AbstractEEObject; format::AbstractString = "NPY")
+
+Function to take an EarthEngine computed image and return an Array with geographic information (i.e. GeoArray).
+This signature will return all of the bands within the image.
+Currently on the "NPY" format is available.
+See https://developers.google.com/earth-engine/reference/rest/v1beta/projects.image/computePixels
+"""
 function computepixels(
     session::EESession,
     pixelgrid::PixelGrid,
     image::EE.AbstractEEObject;
     format::AbstractString = "NPY",
 )
+    # get the band information
     bands = computevalue(session, bandNames(image))
 
+    # pass to computepixels with band info
     computepixels(session, pixelgrid, image, bands; format = format)
 
 end
 
+"""
+    computepixels(session::EESession, pixelgrid::PixelGrid, image::EE.AbstractEEObject, bands::AbstractVector{String}; format::AbstractString = "NPY")
+
+Function to take an EarthEngine computed image and return an Array with geographic information (i.e. GeoArray).
+Currently on the "NPY" format is available.
+See https://developers.google.com/earth-engine/reference/rest/v1beta/projects.image/computePixels
+"""
 function computepixels(
     session::EESession,
     pixelgrid::PixelGrid,
     image::EE.AbstractEEObject,
-    bands::AbstractVector;
+    bands::AbstractVector{String};
     format::AbstractString = "NPY",
 )
     endpoint = "image:computePixels"
@@ -141,7 +175,7 @@ function computepixels(
 
     response = _sendrequest(session, endpoint, payload)
 
-    result = decoderesponse(response)
+    result = decode_npy_response(response)
 
     affine = extract_affinemap(pixelgrid)
 
