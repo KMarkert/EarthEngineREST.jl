@@ -1,11 +1,8 @@
-push!(LOAD_PATH,"../src/")
+push!(LOAD_PATH, "../src/")
 
 using Documenter, EarthEngineREST
 
-pages = [
-    "Home" => "index.md",
-    "API" => "api.md",
-]
+pages = ["Home" => "index.md", "API" => "api.md"]
 
 makedocs(;
     modules = [EarthEngineREST],
@@ -17,5 +14,5 @@ makedocs(;
 
 deploydocs(;
     repo = "github.com/KMarkert/EarthEngineREST.jl.git",
-    devbranch = "main"
+    devbranch = "main",
 )

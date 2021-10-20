@@ -1,4 +1,4 @@
-Integer# script to add EarthEngine REST API types
+# script to add EarthEngine REST API types
 # attempt to replicated API types in Julia structs
 
 """
@@ -126,8 +126,7 @@ function PixelGrid(bbox::AbstractVector, resolution::Real, crsCode::String)
 
     dimensions = GridDimensions(xdim, ydim)
 
-    affinetransform =
-        AffineTransform(resolution, 0, minx, 0, -resolution, maxy)
+    affinetransform = AffineTransform(resolution, 0, minx, 0, -resolution, maxy)
 
     PixelGrid(dimensions, affinetransform, crsCode)
 end
@@ -159,14 +158,19 @@ end
 
 PixelGrid constructor based on an EarthEngine feature collection bounds, needs resolution and crs defined
 """
-function PixelGrid(session::EESession,geom::EE.AbstractEEObject,resolution::Real,crsCode::String)
-    coords = computevalue(session,coordinates(bounds(geom)))
-    minx = min(coords[1,:,1]...)
-    maxx = max(coords[1,:,1]...)
-    miny = min(coords[1,:,2]...)
-    maxy = max(coords[1,:,2]...)
+function PixelGrid(
+    session::EESession,
+    geom::EE.AbstractEEObject,
+    resolution::Real,
+    crsCode::String,
+)
+    coords = computevalue(session, coordinates(bounds(geom)))
+    minx = min(coords[1, :, 1]...)
+    maxx = max(coords[1, :, 1]...)
+    miny = min(coords[1, :, 2]...)
+    maxy = max(coords[1, :, 2]...)
 
-    PixelGrid([minx,miny,maxx,maxy], resolution, crsCode)
+    PixelGrid([minx, miny, maxx, maxy], resolution, crsCode)
 end
 
 struct CloudStorageDestination
@@ -187,14 +191,15 @@ struct DoubleRange
     min::Real
     max::Real
 
-    DoubleRange(min::Real,max::Real) = new(min,max)
+    DoubleRange(min::Real, max::Real) = new(min, max)
 end
 
 struct DriveDestination
     folder::AbstractString
     filenamePrefix::AbstractString
 
-    DriveDestination(folder::AbstractString,filenamePrefix::AbstractString) = new(folder,filenamePrefix)
+    DriveDestination(folder::AbstractString, filenamePrefix::AbstractString) =
+        new(folder, filenamePrefix)
 end
 
 struct EarthEngineDestination
@@ -204,16 +209,19 @@ struct EarthEngineDestination
 end
 
 struct Expression
-    values::AbstractDict{Union{String, Symbol},Any}
+    values::AbstractDict{Union{String,Symbol},Any}
     result::AbstractString
 
-    Expression(values::AbstractDict{Union{AbstractString, Symbol},Any},result::AbstractString) = new(values,result)
+    Expression(
+        values::AbstractDict{Union{AbstractString,Symbol},Any},
+        result::AbstractString,
+    ) = new(values, result)
 end
 
 struct Feature
     type::AbstractString
-    geometry::AbstractDict{Union{AbstractString, Symbol},Any}
-    properties::AbstractDict{Union{AbstractString, Symbol},Any}
+    geometry::AbstractDict{Union{AbstractString,Symbol},Any}
+    properties::AbstractDict{Union{AbstractString,Symbol},Any}
 end
 
 struct VisualizationOptions
@@ -235,7 +243,7 @@ struct VisualizationOptions
         gamma::Real,
         opacity::Real,
     )
-        ranges = [range,]
+        ranges = [range]
         new(ranges, paletteColors, gamma, opacity)
     end
 
