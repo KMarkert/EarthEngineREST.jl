@@ -105,4 +105,4 @@ datestr = computevalue(session,imgdate)
 
 Sometimes calculating statistics or reading metadata from the image/collections is needed. Using the `computevalue` above, essentially any EE.ComputedObject can be requested to a local Julia data type and continue using on our local system.
 
-More information on the API can be found in the [API docs]()
+More information on the API can be found in the [API docs](https://kmarkert.github.io/EarthEngineREST.jl/dev/api/)
