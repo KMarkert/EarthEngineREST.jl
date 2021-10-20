@@ -86,7 +86,7 @@ data = computepixels(session, pixelgrid, image)
 
 If we plot the results we should see something like the following image:
 
-![ndvi_example](docs/src/assets/ndvi_example.png)
+![ndvi_example](assets/ndvi_example.png)
 
 Lastly, to illustrate how to get data from non-spatial computations, here we gather some metadata information from the image and make requests.
 
