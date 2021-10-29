@@ -117,8 +117,10 @@ end
 
 Function to extract bounding box vector from AffineTransform type. Vector will be [W, S, E, N]
 """
-function extract_bbox(x::AffineTransform)
+function extract_bbox(x::AffineTransform,griddims::GridDimensions)
     geo_t = extract_geotransform(x)
+    x_size = griddims.width
+    y_size = griddims.height
 
     xmin = min(geo_t[1], geo_t[1] + x_size * geo_t[2])
     xmax = max(geo_t[1], geo_t[1] + x_size * geo_t[2])
@@ -134,7 +136,7 @@ end
 Function to extract bounding box vector from PixelGrid type. Vector will be [W, S, E, N]
 """
 function extract_bbox(x::PixelGrid)
-    extract_bbox(x.affineTransform)
+    extract_bbox(x.affineTransform,x.dimensions)
 end
 
 """
