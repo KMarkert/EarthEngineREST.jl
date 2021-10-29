@@ -3,7 +3,7 @@ Julia package to send REST API requests to Google Earth Engine
 
 ## Introduction
 
-The `EarthEngineREST.jl` package aims to make connecting Earth Engine (EE) computations with Julia processing easier. This package is meant to interface with [`EarthEngine.jl`](https://kmarkert.github.io/EarthEngine.jl/dev/) and request Julia types/data from EE Types. While this package provides this fuctionality, the broader goal is to provide the [full capabilities of the Earth Engine REST API](https://developers.google.com/earth-engine/reference/rest)
+The `EarthEngineREST.jl` package aims to make connecting Earth Engine (EE) computations with Julia processing easier. This package is meant to interface with [`EarthEngine.jl`](https://kmarkert.github.io/EarthEngine.jl/dev/) and request Julia types/data from EE Types. While this package provides this functionality, the broader goal is to provide the [full capabilities of the Earth Engine REST API](https://developers.google.com/earth-engine/reference/rest)
 
 It should be noted that restee relies on fairly new and advanced EE features that may not be suitable for all users (see [warning from the EE team](https://developers.google.com/earth-engine/reference#audience)). If you are new to Earth Engine, please get started with the [JavaScript guide](https://developers.google.com/earth-engine/getstarted).
 
