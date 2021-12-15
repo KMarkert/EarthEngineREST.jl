@@ -113,11 +113,11 @@ function extract_geotransform(x::PixelGrid)
 end
 
 """
-    extract_bbox(x::AffineTransform)
+    extract_bbox(x::AffineTransform, griddims::GridDimensions)
 
 Function to extract bounding box vector from AffineTransform type. Vector will be [W, S, E, N]
 """
-function extract_bbox(x::AffineTransform,griddims::GridDimensions)
+function extract_bbox(x::AffineTransform, griddims::GridDimensions)
     geo_t = extract_geotransform(x)
     x_size = griddims.width
     y_size = griddims.height
@@ -173,8 +173,8 @@ function extract_gridcoordinates(x::PixelGrid)
     bbox = extract_bbox(x)
     gt = extract_geotransform(x)
 
-    lons = collect(bbox[1]:abs(gt[2]):bbox[3])
-    lats = collect(bbox[2]:abs(gt[6]):bbox[4])
+    lons = collect(bbox[1]:abs(gt[2]):bbox[3])[1:end-1]
+    lats = collect(bbox[2]:abs(gt[6]):bbox[4])[2:end]
 
     return lons, lats
 end
