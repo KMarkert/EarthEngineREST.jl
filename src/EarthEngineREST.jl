@@ -158,6 +158,21 @@ function extract_affinemap(x::PixelGrid)
     extract_affinemap(x.affineTransform)
 end
 
+function extract_lonslats(x::AffineTransform)
+    gt = extract_geotransform()
+
+end
+
+function extract_gridcoordinates(x::PixelGrid)
+    bbox = extract_bbox(x)
+    gt = extract_geotransform(x)
+
+    lons = collect(bbox[1]:abs(gt[2]):bbox[3])
+    lats = collect(bbox[2]:abs(gt[6]):bbox[4])
+
+    return lons, lats
+end
+
 """
     Initialize(session::EESession)
 
