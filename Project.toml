@@ -1,7 +1,7 @@
 name = "EarthEngineREST"
 uuid = "8d663f9d-4f48-40de-bd8d-17f077f467f6"
 authors = ["kmarkert <kel.markert@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
