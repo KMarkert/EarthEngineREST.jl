@@ -163,6 +163,12 @@ function extract_lonslats(x::AffineTransform)
 
 end
 
+"""
+    extract_gridcoordinates(x::PixelGrid)
+
+Function to convert PixelGrid to vectors of lat lon coordinates. Returns
+a tuple of (lon::Vector{Float64}, lat::Vector{Float64}).
+"""
 function extract_gridcoordinates(x::PixelGrid)
     bbox = extract_bbox(x)
     gt = extract_geotransform(x)

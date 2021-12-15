@@ -69,3 +69,7 @@ EarthEngineREST.extract_bbox
 ```@docs
 EarthEngineREST.extract_affinemap
 ```
+
+```@docs
+EarthEngineREST.extract_gridcoordinates
+```
