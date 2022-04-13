@@ -20,8 +20,8 @@ const gauth = PyNULL()
 
 # specify different urls and routings based on api version
 const baseurl = "https://earthengine.googleapis.com"
-const alphaapi = joinpath(baseurl, "v1alpha")
-const betaapi = joinpath(baseurl, "v1beta")
+const alphaapi = join([baseurl, "v1alpha"],"/")
+const betaapi = join([baseurl, "v1beta"], "/")
 const latestapi = betaapi
 
 # create a lookup dictionary of api paths so users can use their preference
@@ -46,7 +46,9 @@ function _sendrequest(
     version::AbstractString = "latest",
     nretries::Integer = 4
 )
-    url = joinpath(apis[version], "projects", session.project, endpoint)
+
+    urlparts = [apis[version], "projects", session.project, endpoint]
+    url = join(urlparts, "/")
 
     @repeat nretries try
         response = session.auth.post(url = url, data = JSON3.write(data))
