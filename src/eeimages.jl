@@ -179,7 +179,7 @@ function computepixels(
 
     affine = extract_affinemap(pixelgrid)
 
-    output = GeoArray(result[:,end:-1:1], affine, pixelgrid.crsCode)
+        output = GeoArray(result[:,end:-1:1,:], affine, pixelgrid.crsCode)
 
     return output
 end
